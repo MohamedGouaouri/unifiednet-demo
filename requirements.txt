@@ -1,3 +1,4 @@
+torch
 einops==0.8.0
 hyperbox @ git+https://github.com/marsggbo/hyperbox.git@cf163b77c3b53b0df6e430d4a3cb6f60e36ae366
 kornia==0.7.2
@@ -6,5 +7,4 @@ lightning-utilities==0.11.2
 medmnist @ git+https://github.com/MedMNIST/MedMNIST.git@5c236af3309b8b2aea5bf9cecb270b57eb7bfff1
 numpy==1.26.4
 pytorch-lightning==1.8.6
-torch==2.3.1
 torchvision==0.18.1
