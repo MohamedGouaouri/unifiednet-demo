@@ -2,7 +2,7 @@ import torch
 import copy
 import os
 from torchvision import transforms
-
+from tqdm import tqdm
 from hyperbox.mutator import DartsMutator
 
 from unified_net.mobilenet3d.network import Mobile3DNet
@@ -17,13 +17,13 @@ from medmnist import NoduleMNIST3D
 # Define data transformation pipelines
 train_transform = transforms.Compose(
                 [
-                    ShapeTransform3D('random')
+                    ShapeTransform3D('random'),
                 ]
             )
 
 val_transform = transforms.Compose(
                 [
-                    ShapeTransform3D(0.5)
+                    ShapeTransform3D(0.5),
                 ]
 )
 
@@ -87,6 +87,7 @@ def unrolled_backward(model, mutator, criterion, w_opt, a_opt, train_x, train_y,
     # keep gradients for model here for compute hessian
     mutator.reset()
     output = model(val_x)
+    
     a_loss = criterion(output, val_y)
     w_model, w_ctrl = tuple(model.parameters()), tuple(mutator.parameters())
     w_grads = torch.autograd.grad(a_loss, w_model + w_ctrl)
@@ -132,8 +133,8 @@ def _restore_weights(model, backup_params):
 def train(train_loader, val_loader, model, mutator, criterion, w_opt, a_opt, is_rolled, device, epoch):
     model.train()
     for batch_idx, ((train_x, train_y), (val_x, val_y)) in enumerate(zip(train_loader, val_loader)):
-        train_x, train_y = train_x.to(device, non_blocking=True), train_y.to(device, non_blocking=True)
-        val_x, val_y = val_x.to(device, non_blocking=True), val_y.to(device, non_blocking=True)
+        train_x, train_y = train_x.type(torch.float).to(device, non_blocking=True), train_y.type(torch.float).to(device, non_blocking=True)
+        val_x, val_y = val_x.to(device, non_blocking=True), val_y.type(torch.float).to(device, non_blocking=True)
 
         # update architecture
         if a_opt is not None:
@@ -168,7 +169,7 @@ def validate(loader, model, criterion, device, verbose=True):
     correct = 0
     with torch.no_grad():
         for batch_idx, (x, y) in enumerate(loader):
-            x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
+            x, y = x.type(torch.float).to(device, non_blocking=True), y.type(torch.float).to(device, non_blocking=True)
             output = model(x)
             loss = criterion(output, y)
             test_loss += loss.item()
@@ -191,7 +192,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device('cp
 model = net.to(device)
 mutator = dm.to(device)
 is_rolled = False
-for epoch in range(1, 50):
+for epoch in tqdm(range(1, 50)):
     train(train_loader, val_loader, model, mutator, criterion, network_opt, architecture_opt, is_rolled, device, epoch)
     mask = mutator.export()
     mutator.sample_by_mask(mask)
